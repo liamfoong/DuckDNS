@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
+using System.Net;
+using System.Net.Mail;
 using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
@@ -19,6 +21,7 @@ namespace DuckDNS
         private bool canClose = false;
         private Icon icoTray = Resources.tray;
         private Icon icoTrayC = Resources.tray_checking;
+        private int EmailSentNo = 0;
 
         public Form1()
         {
@@ -30,10 +33,22 @@ namespace DuckDNS
             tbDomain.Text = ddns.Domain;
             tbToken.Text = ddns.Token;
             cbInterval.Text = ddns.Interval;
+            tbSmtp.Text = ddns.Smtp;
+            tbPort.Text = ddns.Port;
+            cbEnableSsl.Checked = ddns.IsEnableSsl;
+            tbUsername.Text = ddns.Username;
+            tbPassword.Text = ddns.Password;
+            tbFrom.Text = ddns.EmailFrom;
+            tbTo.Text = ddns.EmailTo;
+            tbMaxEmail.Text = ddns.MaxEmail;
+            cbSavePass.Checked = ddns.SavePassword;
+            cbUpdateNotification.Checked = ddns.IsIpUpdateNotify;
+
+
             ParseInterval();
             RefreshTimer();
             notifyIcon.Icon = icoTray;
-            allowshowdisplay = tbDomain.Text.Length == 0 || tbToken.Text.Length == 0;
+            allowshowdisplay = tbDomain.Text.Length == 0 || tbToken.Text.Length == 0 || tbSmtp.Text.Length == 0 || tbUsername.Text.Length == 0 || tbPassword.Text.Length == 0 || tbFrom.Text.Length == 0 || tbTo.Text.Length == 0 || tbMaxEmail.Text.Length == 0;
             if (!allowshowdisplay)
                 UpdateDNS();
         }
@@ -55,12 +70,16 @@ namespace DuckDNS
         {
             try
             {
+                string updateResult = "";
+                string emailError = "";
+                DuckDnsResponse response = null;
+
                 notifyIcon.Icon = icoTrayC;
-                bool update = ddns.Update();
-                lblInfo.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " (" + (update ? "OK" : "FAILED") + ")";
+                bool update = ddns.Update(out updateResult, out response);
+                lblInfo.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + $": DuckDns Update: " + (update ? "OK" : "FAILED");
+                EmailWrap(update, updateResult, out emailError, response);
                 if (!update)
                 {
-                    MessageBox.Show("Error updating Duck DNS domain", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Show();
                 }
             }
@@ -69,6 +88,74 @@ namespace DuckDNS
                 notifyIcon.Icon = icoTray;
             }
         }
+
+        private void EmailWrap(bool isUpdate, string updateResult, out string emailError, DuckDnsResponse response)
+        {
+            emailError = "";
+            int maxEmail = -1;
+            int.TryParse(tbMaxEmail.Text, out maxEmail);
+            var emailInfo = "";
+
+
+            if (isUpdate && response != null && response.IsUpdated)
+            {
+                var isSent = Email("DuckDNS updater - IP Updated", updateResult, out emailError);
+                if (!isSent)
+                    emailInfo = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
+                                    $": email sent error: {emailError}";
+                else
+                    emailInfo = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
+                                    $": email sent: IP Updated - {response.Ip}";
+            }
+
+            if (!isUpdate)
+            {
+                if (maxEmail <= EmailSentNo && maxEmail != -1)
+                {
+                    emailInfo = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + $": Max ({EmailSentNo}) emails reached";
+                }
+                else
+                {
+                    var isSent = Email("DuckDNS updater - Error", updateResult, out emailError);
+                    EmailSentNo++;
+                    emailInfo = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + $": email sent ({EmailSentNo}/{maxEmail})";
+                    if (!isSent)
+                        emailInfo = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
+                                        $": email sent error: {emailError}";
+                }
+            }
+            
+            lblInfo2.Text = emailInfo;
+        }
+
+        private bool Email(string subject, string updateResult, out string error)
+        {
+            error = "";
+            try
+            {
+                int port;
+                MailMessage mail = new MailMessage(tbFrom.Text, tbTo.Text);
+                SmtpClient client = new SmtpClient();
+                int.TryParse(tbPort.Text, out port);
+                client.Port = port;
+                client.DeliveryMethod = SmtpDeliveryMethod.Network;
+                client.UseDefaultCredentials = false;
+                client.EnableSsl = cbEnableSsl.Checked;
+                client.Host = tbSmtp.Text;
+                client.Credentials = new NetworkCredential(tbUsername.Text, tbPassword.Text);
+                mail.Subject = subject;
+                mail.Body = $"Domain: {tbDomain.Text} \r\n" +
+                            $"{updateResult}";
+                client.Send(mail);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+            
+        }      
 
         private void ParseInterval()
         {
@@ -114,6 +201,16 @@ namespace DuckDNS
             ddns.Domain = tbDomain.Text;
             ddns.Token = tbToken.Text;
             ddns.Interval = cbInterval.Text;
+            ddns.Smtp = tbSmtp.Text;
+            ddns.Port = tbPort.Text;
+            ddns.IsEnableSsl = cbEnableSsl.Checked;
+            ddns.Username = tbUsername.Text;
+            ddns.Password = tbPassword.Text;
+            ddns.EmailFrom = tbFrom.Text;
+            ddns.EmailTo = tbTo.Text;
+            ddns.IsIpUpdateNotify = cbUpdateNotification.Checked;
+            ddns.SavePassword = cbSavePass.Checked;
+            ddns.MaxEmail = tbMaxEmail.Text;
             ddns.Save();
             Hide();
             UpdateDNS();
@@ -140,6 +237,17 @@ namespace DuckDNS
                 tbDomain.Text = ddns.Domain;
                 tbToken.Text = ddns.Token;
                 cbInterval.Text = ddns.Interval;
+
+                tbSmtp.Text = ddns.Smtp;
+                tbPort.Text = ddns.Port;
+                cbEnableSsl.Checked = ddns.IsEnableSsl;
+                tbUsername.Text = ddns.Username;
+                tbPassword.Text = ddns.Password;
+                tbFrom.Text = ddns.EmailFrom;
+                tbTo.Text = ddns.EmailTo;
+                tbMaxEmail.Text = ddns.MaxEmail;
+                cbSavePass.Checked = ddns.SavePassword;
+                cbUpdateNotification.Checked = ddns.IsIpUpdateNotify;
             }
         }
 
@@ -174,6 +282,38 @@ namespace DuckDNS
         {
             icoTray.Dispose();
             icoTrayC.Dispose();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            var error = "";
+            var isSent = Email("Test email from C# DuckDns Auto Updater", "This is test body", out error);
+            if (isSent)
+            {
+                lblInfo2.Text = "Email sent successfully";
+            }
+            else
+            {
+                lblInfo2.Text = $"Email sent error: {error}";
+            }
+        }
+
+
+        public class DuckDnsResponse
+        {
+            public string ResponseStatus { get; set; }
+            public string Ip { get; set; }
+            public string UpdateStatus { get; set; }
+
+            public bool IsUpdated
+            {
+                get
+                {
+                    if (UpdateStatus == "NOCHANGE")
+                        return false;
+                    return true;
+                }
+            }
         }
     }
 }

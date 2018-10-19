@@ -8,3 +8,13 @@ C:\Users\XWolfOverride\Source\Repos\DuckDNS\DuckDNS\obj\Debug\DuckDNS.csproj.Gen
 C:\Users\XWolfOverride\Source\Repos\DuckDNS\DuckDNS\obj\Debug\DuckDNS.exe
 C:\Users\XWolfOverride\Source\Repos\DuckDNS\DuckDNS\obj\Debug\DuckDNS.pdb
 C:\Users\XWolfOverride\Source\Repos\DuckDNS\DuckDNS\obj\Debug\DuckDNS.FAbout.resources
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\bin\Debug\DuckDNS.exe.config
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\bin\Debug\DuckDNS.exe
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\bin\Debug\DuckDNS.pdb
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.csprojResolveAssemblyReference.cache
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.FAbout.resources
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.Form1.resources
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.Properties.Resources.resources
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.csproj.GenerateResource.Cache
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.exe
+C:\Users\ansonf\Documents\DuckDNS\DuckDNS\obj\Debug\DuckDNS.pdb
